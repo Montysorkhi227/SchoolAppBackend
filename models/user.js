@@ -17,4 +17,19 @@ const userSchema = mongoose.Schema({
   isApproved: { type: Boolean, default: false },
 });
 
-module.exports = mongoose.model('User', userSchema);
+const userloginSchema = new mongoose.Schema({
+  name: String,
+  password: String,
+  role: String,
+  wards: [wardSchema],
+});
+
+// Define models
+const User = mongoose.model('User', userSchema);
+const Userlogin = mongoose.model('Userlogin', userloginSchema);
+
+// Export both
+module.exports = {
+  User,
+  Userlogin
+};
