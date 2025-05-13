@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
 
-const wardSchema = new mongoose.Schema({
+const wardSchema = mongoose.Schema({
   name: String,
   studentClass: String,
   section: String,
 });
 
-const userSchema = new mongoose.Schema({
+const userSchema = mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
   password: String,
