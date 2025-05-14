@@ -15,7 +15,10 @@ const userSchema = mongoose.Schema({
   profileImage: String,
   wards: [wardSchema],
   isApproved: { type: Boolean, default: false },
-});
+  otp: String,
+  isVerified: { type: Boolean, default: false },
+  otpExpiresAt: Date,
+}, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
 module.exports = { User };
