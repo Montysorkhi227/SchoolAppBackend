@@ -1,28 +1,44 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/user');
-const PendingRequest = require('../models/pendingRequest');
+const multer = require('multer');
+const { storage } = require('../config/Cloudinary');
+const upload = multer({ storage });
 
-// ✅ Signup Route
-router.post('/signup', async (req, res) => {
-  const { name, email, password, contact, role, profileImage, wards } = req.body;
+const { User } = require('../models/user');
+const PendingRequest = require('../models/pending');
+
+// ✅ Signup Route with Image Upload
+router.post('/signup', upload.single('profileImage'), async (req, res) => {
+  const { username, email, password, contact, role } = req.body; // Use username instead of name
+  let wards = [];
 
   try {
+    if (role === 'Parent') {
+      wards = JSON.parse(req.body.wards || '[]');
+    }
+
+    // Check if email or username already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: 'Email already exists.' });
 
+    const existingUsername = await User.findOne({ username }); // Check if username exists
+    if (existingUsername) return res.status(400).json({ message: 'Username already exists.' });
+
+    const profileImage = req.file?.path || '';  // Store the image URL from Cloudinary
+
     const newUser = new User({
-      name,
+      username,  // Save username
       email,
       password,
       contact,
       role,
       profileImage,
-      wards: role === 'Parent' ? wards : [],
+      wards,
       isApproved: role === 'Teacher' || role === 'Accountant' ? false : true,
     });
 
     await newUser.save();
+
     res.status(201).json({
       message:
         role === 'Teacher' || role === 'Accountant'
@@ -35,6 +51,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
+// ✅ Login Route
 router.post('/login', async (req, res) => {
   const { username, password, role } = req.body;
 
@@ -52,14 +69,14 @@ router.post('/login', async (req, res) => {
 
   try {
     const user = await User.findOne({
-      name: new RegExp(`^${username}$`, 'i'),
+      username: new RegExp(`^${username}$`, 'i'),  // Match based on username
       password,
       role,
     });
 
     if (!user) {
       const isPending = await PendingRequest.findOne({
-        name: new RegExp(`^${username}$`, 'i'),
+        username: new RegExp(`^${username}$`, 'i'),  // Match based on username
         password,
         role,
       });
@@ -74,9 +91,10 @@ router.post('/login', async (req, res) => {
 
       return res.status(401).json({
         success: false,
-        message: 'Invalid name, password, or role.',
+        message: 'Invalid username, password, or role.',
       });
     }
+
     res.json({
       success: true,
       message: 'Login successful',

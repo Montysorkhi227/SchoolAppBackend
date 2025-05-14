@@ -7,7 +7,7 @@ const wardSchema = mongoose.Schema({
 });
 
 const userSchema = mongoose.Schema({
-  name: String,
+  username: { type: String, unique: true }, // Replaced 'name' with 'username' and made it unique
   email: { type: String, unique: true },
   password: String,
   contact: String,
@@ -17,19 +17,5 @@ const userSchema = mongoose.Schema({
   isApproved: { type: Boolean, default: false },
 });
 
-const userloginSchema = new mongoose.Schema({
-  name: String,
-  password: String,
-  role: String,
-  wards: [wardSchema],
-});
-
-// Define models
 const User = mongoose.model('User', userSchema);
-const Userlogin = mongoose.model('Userlogin', userloginSchema);
-
-// Export both
-module.exports = {
-  User,
-  Userlogin
-};
+module.exports = { User };

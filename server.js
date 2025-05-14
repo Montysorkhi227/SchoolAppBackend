@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
-const authRoutes = require('./routes/auth');
-const otpRoutes = require('./routes/otp');
+const authRoutes = require('./routes/auth'); // Auth routes handling signup and login
+const otpRoutes = require('./routes/otp'); // If you're using OTP routes
 
 const app = express();
 
@@ -13,19 +13,19 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/otp', otpRoutes);
+app.use('/api/auth', authRoutes);  // API for authentication (signup/login)
+app.use('/api/otp', otpRoutes);  // API for OTP (if you're using it)
 
 // MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/schoolApp', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('✅ MongoDB connected successfully'))
-.catch((err) => {
-  console.error('❌ MongoDB connection error:', err.message);
-  process.exit(1);
-});
+  .then(() => console.log('✅ MongoDB connected successfully'))
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err.message);
+    process.exit(1);
+  });
 
 // Start the server
 const PORT = process.env.PORT || 5000;

@@ -1,8 +1,15 @@
 const mongoose = require('mongoose');
-const pendingSchema = new mongoose.Schema({
+
+const pendingRequestSchema = mongoose.Schema({
+  username: String,
+  password: String,
+  role: String,
+  wards: [{
     name: String,
-    password: String,
-    role: String,
-  });
-  
-  module.exports = mongoose.model('PendingRequest', pendingSchema);
+    studentClass: String,
+    section: String,
+  }],
+});
+
+const PendingRequest = mongoose.model('PendingRequest', pendingRequestSchema);
+module.exports = PendingRequest;
