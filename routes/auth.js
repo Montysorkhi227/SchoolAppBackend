@@ -7,14 +7,15 @@ const upload = multer({ storage });
 
 const { User } = require('../models/user');
 const PendingRequest = require('../models/pending');
+const Otp = require('../models/otp'); // Import the OTP model
 const crypto = require('crypto'); // To generate OTP
 
 // Configure Nodemailer Transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',  // You can use other services like SendGrid
   auth: {
-    user: 'your-email@example.com', // Replace with your email
-    pass: 'your-email-password', // Replace with your email password (consider using app passwords)
+    user: 'montysorkhi227@gmail.com', // Replace with your email
+    pass: 'ecna ozkd rttd lihe', // Replace with your email password (consider using app passwords)
   },
 });
 
@@ -37,7 +38,7 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
 
     const userInUsers = await User.findOne({ username: new RegExp(`^${username}$`, 'i') });
     const userInPending = await PendingRequest.findOne({ username: new RegExp(`^${username}$`, 'i') });
-    
+
     if (userInUsers || userInPending) {
       return res.status(400).json({ message: 'Username already exists.' });
     }
@@ -45,32 +46,33 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
     const profileImage = req.file?.path || '';
 
     // Generate OTP (6-digit random number)
-    const otp = crypto.randomInt(100000, 999999); 
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpiration = Date.now() + 5 * 60 * 1000; // OTP expires in 5 minutes
+
+    // Save OTP to the database
+    const newOtp = new Otp({
+      email,
+      otp,
+      expiration: new Date(otpExpiration),
+    });
+
+    await newOtp.save();
+
     // Send OTP to email
     const mailOptions = {
-      from: EMAIL_USER, // Sender address
+      from: 'your-email@example.com', // Sender address
       to: email, // Receiver address
       subject: 'Your OTP for Signup',
       text: `Your OTP for signup is: ${otp}`, // OTP in the body of the email
     };
 
-    // Send OTP email
     transporter.sendMail(mailOptions, async (error, info) => {
       if (error) {
         console.error(error);
         return res.status(500).json({ message: 'Failed to send OTP.' });
       }
 
-      // Save OTP and expiration time (optional) in a temporary storage (e.g., database or cache)
-      // Here you would typically save the OTP to a database or in-memory cache (like Redis).
-      // For now, we'll just send it back in the response.
-      const otpExpiration = Date.now() + 5 * 60 * 1000; // 5 minutes expiration time
-
-      // Store OTP temporarily for verification (e.g., store OTP in a session or DB)
-      req.session.otp = otp; // Using session for simplicity
-      req.session.otpExpiration = otpExpiration;
-
-      // You can save user data to PendingRequest or directly to User if OTP is valid
+      // Prepare user data (pending approval)
       const userData = {
         username,
         email,
@@ -103,26 +105,35 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
 
 // OTP Verification Route
 router.post('/verify-otp', async (req, res) => {
-  const { otp } = req.body;
+  const { email, otp } = req.body;
 
   try {
-    if (!otp) {
-      return res.status(400).json({ message: 'OTP is required.' });
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required.' });
     }
 
-    // Check if OTP is valid and not expired
-    if (req.session.otp !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP.' });
+    // Find OTP in the database
+    const otpRecord = await Otp.findOne({ email }).sort({ createdAt: -1 });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: 'No OTP found for this email.' });
     }
 
+    // Check if OTP is expired
     const currentTime = Date.now();
-    if (currentTime > req.session.otpExpiration) {
+    if (currentTime > otpRecord.expiration) {
       return res.status(400).json({ message: 'OTP has expired.' });
+    }
+
+    // Verify OTP
+    if (otp !== otpRecord.otp) {
+      return res.status(400).json({ message: 'Invalid OTP.' });
     }
 
     // OTP is valid, proceed with finalizing the signup (e.g., save the user)
     res.status(200).json({ message: 'OTP verified successfully. Proceeding with signup.' });
-    // Finalize the user creation after OTP verification
+
+    // Finalize the user creation here
     // You can save the user to the `User` collection now that OTP is verified.
 
   } catch (error) {
