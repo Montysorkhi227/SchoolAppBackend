@@ -19,12 +19,19 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
     }
 
     // Check for existing user/email
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: 'Email already exists.' });
+    const emailInUsers = await User.findOne({ email });
+const emailInPending = await PendingRequest.findOne({ email });
+if (emailInUsers || emailInPending) {
+  return res.status(400).json({ message: 'Email already exists.' });
+}
 
-    const existingUsername = await User.findOne({ username: new RegExp(`^${username}$`, 'i') });
-    if (existingUsername) return res.status(400).json({ message: 'Username already exists.' });
-
+    const userInUsers = await User.findOne({ username: new RegExp(`^${username}$`, 'i') });
+    const userInPending = await PendingRequest.findOne({ username: new RegExp(`^${username}$`, 'i') });
+    
+    if (userInUsers || userInPending) {
+      return res.status(400).json({ message: 'Username already exists.' });
+    }
+    
     const profileImage = req.file?.path || '';
 
     const userData = {
