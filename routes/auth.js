@@ -8,8 +8,9 @@ const { User } = require('../models/user');
 const PendingRequest = require('../models/pending');
 
 // ✅ Signup Route with Image Upload
+// ✅ Signup Route with Image Upload
 router.post('/signup', upload.single('profileImage'), async (req, res) => {
-  const { username, email, password, contact, role } = req.body; // Use username instead of name
+  const { username, email, password, contact, role } = req.body;
   let wards = [];
 
   try {
@@ -17,17 +18,17 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
       wards = JSON.parse(req.body.wards || '[]');
     }
 
-    // Check if email or username already exists
+    // Check for existing user/email
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: 'Email already exists.' });
 
-    const existingUsername = await User.findOne({ username }); // Check if username exists
+    const existingUsername = await User.findOne({ username });
     if (existingUsername) return res.status(400).json({ message: 'Username already exists.' });
 
-    const profileImage = req.file?.path || '';  // Store the image URL from Cloudinary
+    const profileImage = req.file?.path || '';
 
-    const newUser = new User({
-      username,  // Save username
+    const userData = {
+      username,
       email,
       password,
       contact,
@@ -35,21 +36,26 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
       profileImage,
       wards,
       isApproved: role === 'Teacher' || role === 'Accountant' ? false : true,
-    });
+    };
 
+    // Save to PendingRequest if not yet approved
+    if (userData.isApproved === false) {
+      const pendingUser = new PendingRequest(userData);
+      await pendingUser.save();
+      return res.status(201).json({ message: 'Request pending approval.' });
+    }
+
+    // Otherwise, save to User directly
+    const newUser = new User(userData);
     await newUser.save();
 
-    res.status(201).json({
-      message:
-        role === 'Teacher' || role === 'Accountant'
-          ? 'Request pending approval.'
-          : 'Signup successful.',
-    });
+    res.status(201).json({ message: 'Signup successful.' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Something went wrong.' });
   }
 });
+
 
 // ✅ Login Route
 router.post('/login', async (req, res) => {

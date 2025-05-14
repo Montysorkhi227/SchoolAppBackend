@@ -9,6 +9,8 @@ const pendingRequestSchema = mongoose.Schema({
     studentClass: String,
     section: String,
   }],
+  profileImage: String,
+  isApproved: { type: Boolean, default: false },
 });
 
 const PendingRequest = mongoose.model('PendingRequest', pendingRequestSchema);
