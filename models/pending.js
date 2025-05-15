@@ -1,5 +1,5 @@
+//pending.js
 const mongoose = require('mongoose');
-
 const pendingRequestSchema = mongoose.Schema({
   username: String,
   password: String,

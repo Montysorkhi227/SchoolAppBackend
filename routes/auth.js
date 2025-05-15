@@ -1,21 +1,24 @@
 const express = require('express');
 const router = express.Router();
+const dotenv = require('dotenv');
+dotenv.config();
 const multer = require('multer');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const { storage } = require('../config/Cloudinary');
 const upload = multer({ storage });
 
 const { User } = require('../models/user');
 const PendingRequest = require('../models/pending');
-const Otp = require('../models/otp'); // Import the OTP model
-const crypto = require('crypto'); // To generate OTP
+const Otp = require('../models/otp');
+const { verifyOtp } = require('../controllers/authController');
 
-// Configure Nodemailer Transporter
+// ✅ Configure Nodemailer with Environment Variables
 const transporter = nodemailer.createTransport({
-  service: 'gmail',  // You can use other services like SendGrid
+  service: 'gmail',
   auth: {
-    user: 'montysorkhi227@gmail.com', // Replace with your email
-    pass: 'ecna ozkd rttd lihe', // Replace with your email password (consider using app passwords)
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
 });
 
@@ -25,17 +28,19 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
   let wards = [];
 
   try {
+    // Parse wards data if role is Parent
     if (role === 'Parent') {
       wards = JSON.parse(req.body.wards || '[]');
     }
 
-    // Check for existing user/email
+    // Check if email already exists in Users or Pending Requests
     const emailInUsers = await User.findOne({ email });
     const emailInPending = await PendingRequest.findOne({ email });
     if (emailInUsers || emailInPending) {
       return res.status(400).json({ message: 'Email already exists.' });
     }
 
+    // Check if username already exists in Users or Pending Requests
     const userInUsers = await User.findOne({ username: new RegExp(`^${username}$`, 'i') });
     const userInPending = await PendingRequest.findOne({ username: new RegExp(`^${username}$`, 'i') });
 
@@ -43,13 +48,13 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
       return res.status(400).json({ message: 'Username already exists.' });
     }
 
+    // Get profile image URL from Cloudinary upload
     const profileImage = req.file?.path || '';
 
-    // Generate OTP (6-digit random number)
+    // Generate OTP
     const otp = crypto.randomInt(100000, 999999).toString();
-    const otpExpiration = Date.now() + 5 * 60 * 1000; // OTP expires in 5 minutes
+    const otpExpiration = Date.now() + 5 * 60 * 1000;
 
-    // Save OTP to the database
     const newOtp = new Otp({
       email,
       otp,
@@ -58,21 +63,21 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
 
     await newOtp.save();
 
-    // Send OTP to email
+    // Send OTP email
     const mailOptions = {
-      from: 'your-email@example.com', // Sender address
-      to: email, // Receiver address
+      from: process.env.EMAIL_USER,
+      to: email,
       subject: 'Your OTP for Signup',
-      text: `Your OTP for signup is: ${otp}`, // OTP in the body of the email
+      text:`Your OTP for signup is: ${otp}`,
     };
 
-    transporter.sendMail(mailOptions, async (error, info) => {
+    transporter.sendMail(mailOptions, async (error) => {
       if (error) {
         console.error(error);
         return res.status(500).json({ message: 'Failed to send OTP.' });
       }
 
-      // Prepare user data (pending approval)
+      // User data to be saved
       const userData = {
         username,
         email,
@@ -84,17 +89,14 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
         isApproved: role === 'Teacher' || role === 'Accountant' ? false : true,
       };
 
-      // Save to PendingRequest if not yet approved
-      if (userData.isApproved === false) {
+      if (!userData.isApproved) {
         const pendingUser = new PendingRequest(userData);
         await pendingUser.save();
         return res.status(201).json({ message: 'Request pending approval. OTP sent to email.' });
       }
 
-      // Otherwise, save to User directly
       const newUser = new User(userData);
       await newUser.save();
-
       res.status(201).json({ message: 'Signup successful. OTP sent to email.' });
     });
   } catch (error) {
@@ -103,8 +105,33 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
   }
 });
 
-// OTP Verification 
-Routerouter.post('/generate-otp', generateOtp);
+// ✅ Optional OTP Generation Route
+router.post('/generate-otp', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiration = Date.now() + 5 * 60 * 1000;
 
-// OTP वेरीफाई करने के लिए रूट
+    await Otp.deleteMany({ email });
+
+    const newOtp = new Otp({ email, otp, expiration: new Date(expiration) });
+    await newOtp.save();
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Your OTP Code',
+      text: `Your OTP is: ${otp}`,
+    });
+
+    res.status(200).json({ message: 'OTP sent to email.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to generate OTP.' });
+  }
+});
+
+// ✅ OTP Verification Route
 router.post('/verify-otp', verifyOtp);
+
+module.exports = router;
