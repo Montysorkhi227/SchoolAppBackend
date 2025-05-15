@@ -2,6 +2,7 @@
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { Otp } = require('../models/otp');
+const { log } = require('console');
 
 // ✅ Ensure environment variables are loaded
 require('dotenv').config();
@@ -52,6 +53,7 @@ exports.generateOtp = async (req, res) => {
 // ✅ Verify OTP
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
+  console.log(otp)
 
   try {
     const otpRecord = await Otp.findOne({ email }).sort({ createdAt: -1 }); // Get the latest OTP
@@ -73,7 +75,6 @@ exports.verifyOtp = async (req, res) => {
     res.status(200).json({ message: 'OTP verified successfully.' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Something went wrong.' });
-  }
+    res.status(500).json({ message: 'Something went wrong.' });
+  }
 };
-

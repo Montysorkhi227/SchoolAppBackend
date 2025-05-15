@@ -10,7 +10,7 @@ const upload = multer({ storage });
 
 const { User } = require('../models/user');
 const PendingRequest = require('../models/pending');
-const Otp = require('../models/otp');
+const Otp = require('../models/otp')
 const { verifyOtp } = require('../controllers/authController');
 
 // ✅ Configure Nodemailer with Environment Variables
@@ -101,7 +101,8 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Something went wrong.' });
+
+    res.status(500).json({ message: 'Something went wrong.' ,error});
   }
 });
 
