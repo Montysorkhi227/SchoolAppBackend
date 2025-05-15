@@ -103,43 +103,8 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
   }
 });
 
-// OTP Verification Route
-router.post('/verify-otp', async (req, res) => {
-  const { email, otp } = req.body;
+// OTP Verification 
+Routerouter.post('/generate-otp', generateOtp);
 
-  try {
-    if (!email || !otp) {
-      return res.status(400).json({ message: 'Email and OTP are required.' });
-    }
-
-    // Find OTP in the database
-    const otpRecord = await Otp.findOne({ email }).sort({ createdAt: -1 });
-
-    if (!otpRecord) {
-      return res.status(400).json({ message: 'No OTP found for this email.' });
-    }
-
-    // Check if OTP is expired
-    const currentTime = Date.now();
-    if (currentTime > otpRecord.expiration) {
-      return res.status(400).json({ message: 'OTP has expired.' });
-    }
-
-    // Verify OTP
-    if (otp !== otpRecord.otp) {
-      return res.status(400).json({ message: 'Invalid OTP.' });
-    }
-
-    // OTP is valid, proceed with finalizing the signup (e.g., save the user)
-    res.status(200).json({ message: 'OTP verified successfully. Proceeding with signup.' });
-
-    // Finalize the user creation here
-    // You can save the user to the `User` collection now that OTP is verified.
-
-  } catch (error) {
-    console.error('OTP verification error:', error);
-    res.status(500).json({ message: 'Something went wrong during OTP verification.' });
-  }
-});
-
-module.exports = router;
+// OTP वेरीफाई करने के लिए रूट
+router.post('/verify-otp', verifyOtp);
