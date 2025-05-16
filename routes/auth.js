@@ -105,33 +105,6 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
     res.status(500).json({ message: 'Something went wrong.' ,error});
   }
 });
-
-// ✅ Optional OTP Generation Route
-router.post('/generate-otp', async (req, res) => {
-  const { email } = req.body;
-  try {
-    const otp = crypto.randomInt(100000, 999999).toString();
-    const expiration = Date.now() + 5 * 60 * 1000;
-
-    await Otp.deleteMany({ email });
-
-    const newOtp = new Otp({ email, otp, expiration: new Date(expiration) });
-    await newOtp.save();
-
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Your OTP Code',
-      text: `Your OTP is: ${otp}`,
-    });
-
-    res.status(200).json({ message: 'OTP sent to email.' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to generate OTP.' });
-  }
-});
-
 // ✅ OTP Verification Route
 router.post('/verify-otp', verifyOtp);
 
