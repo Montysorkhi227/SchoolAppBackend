@@ -1,7 +1,7 @@
 // controllers/authController.js
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const { Otp } = require('../models/otp');
+const  Otp  = require('../models/otp');
 const { log } = require('console');
 
 // ✅ Ensure environment variables are loaded

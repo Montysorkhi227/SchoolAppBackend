@@ -6,7 +6,7 @@ const wardSchema = mongoose.Schema({
   section: String,
 });
 const userSchema = mongoose.Schema({
-  username: { type: String, unique: true }, // Replaced 'name' with 'username' and made it unique
+  username: { type: String, unique: true },
   email: { type: String, unique: true },
   password: String,
   contact: String,
