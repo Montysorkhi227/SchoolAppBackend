@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
 const dotenv = require('dotenv');
 dotenv.config();
 const multer = require('multer');
@@ -108,4 +109,34 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
 // ✅ OTP Verification Route
 router.post('/verify-otp', verifyOtp);
 
+router.post('/login', async (req, res) => {
+  const { username, password, role } = req.body;
+
+  try {
+    // Find the user by username
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(401).json({ message: 'User Not Found' });
+    }
+
+    // Check if the role matches
+    if (user.role !== role) {
+      return res.status(403).json({ message: 'Role Not Matched' });
+    }
+
+    // Compare the entered password with the hashed password
+    const isMatch = user.password==password;
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Wrong password' });
+    }
+
+    // Successful login
+    res.status(200).json({ message: 'Login Success', user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
 module.exports = router;

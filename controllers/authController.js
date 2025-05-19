@@ -17,10 +17,10 @@ const transporter = nodemailer.createTransport({
 });
 // ✅ Verify OTP
 exports.verifyOtp = async (req, res) => {
-  const { email, otp } = req.body;
+  const { email2, otp } = req.body;
   console.log(otp)
   try {
-    const otpRecord = await Otp.findOne({ email }).sort({ createdAt: -1 });
+    const otpRecord = await Otp.findOne({ email2 }).sort({ createdAt: -1 });
 
     if (!otpRecord) {
       return res.status(400).json({ message: 'No OTP found for this email.' });
@@ -34,9 +34,10 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: 'Invalid OTP.' });
     }
 
-    await Otp.deleteMany({ email }); // Clean up old OTPs after verification
+    await Otp.deleteMany({ email2 }); // Clean up old OTPs after verification
 
     res.status(200).json({ message: 'OTP verified successfully.' });
+    //// here isaproved is set on true 
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Something went wrong.' });
