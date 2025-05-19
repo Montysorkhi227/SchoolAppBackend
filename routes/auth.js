@@ -108,13 +108,12 @@ router.post('/signup', upload.single('profileImage'), async (req, res) => {
 });
 // ✅ OTP Verification Route
 router.post('/verify-otp', verifyOtp);
-
 router.post('/login', async (req, res) => {
-  const { username, password, role } = req.body;
+  const { email, password, role } = req.body;
 
   try {
     // Find the user by username
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(401).json({ message: 'User Not Found' });
@@ -125,8 +124,8 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ message: 'Role Not Matched' });
     }
 
-    // Compare the entered password with the hashed password
-    const isMatch = user.password==password;
+    // Compare the entered password with the hashed password using bcrypt
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Wrong password' });
@@ -139,4 +138,5 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 });
+
 module.exports = router;

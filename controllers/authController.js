@@ -17,8 +17,9 @@ const transporter = nodemailer.createTransport({
 });
 // ✅ Verify OTP
 exports.verifyOtp = async (req, res) => {
-  const { email2, otp ,email} = req.body;
+  const {  otp ,email,email2, } = req.body;
   console.log(otp)
+  email==email2
   try {
     const otpRecord = await Otp.findOne({ email }).sort({ createdAt: -1 });
 
