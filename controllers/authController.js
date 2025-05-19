@@ -17,10 +17,10 @@ const transporter = nodemailer.createTransport({
 });
 // ✅ Verify OTP
 exports.verifyOtp = async (req, res) => {
-  const { email2, otp } = req.body;
+  const { email2, otp ,email} = req.body;
   console.log(otp)
   try {
-    const otpRecord = await Otp.findOne({ email2 }).sort({ createdAt: -1 });
+    const otpRecord = await Otp.findOne({ email }).sort({ createdAt: -1 });
 
     if (!otpRecord) {
       return res.status(400).json({ message: 'No OTP found for this email.' });
