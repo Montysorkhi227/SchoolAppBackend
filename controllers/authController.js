@@ -1,46 +1,30 @@
-// controllers/authController.js
-const crypto = require('crypto');
-const nodemailer = require('nodemailer');
-const  Otp  = require('../models/otp');
-const { log } = require('console');
+const Otp = require('../models/otp');
+const User = require('../models/user');
 
-// ✅ Ensure environment variables are loaded
-require('dotenv').config();
-
-// ✅ Setup Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
-// ✅ Verify OTP
 exports.verifyOtp = async (req, res) => {
-  const {  otp ,email,email2, } = req.body;
-  console.log(otp)
-  email==email2
   try {
-    const otpRecord = await Otp.findOne({ email }).sort({ createdAt: -1 });
+    const { email, otp } = req.body;
+
+    // Find valid OTP
+    const otpRecord = await Otp.findOne({
+      email,
+      otp,
+      expiration: { $gt: new Date() },
+    });
 
     if (!otpRecord) {
-      return res.status(400).json({ message: 'No OTP found for this email.' });
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
-    if (Date.now() > otpRecord.expiration) {
-      return res.status(400).json({ message: 'OTP has expired.' });
-    }
+    // Delete used OTP
+    await Otp.deleteOne({ _id: otpRecord._id });
 
-    if (otp !== otpRecord.otp) {
-      return res.status(400).json({ message: 'Invalid OTP.' });
-    }
-
-    await Otp.deleteMany({ email2 }); // Clean up old OTPs after verification
-
-    res.status(200).json({ message: 'OTP verified successfully.' });
-    //// here isaproved is set on true 
+    // Update user verification status
+    await User.updateOne({ email }, { $set: { isVerified: true } });
+console.log("otp sent ")
+    res.json({ message: 'OTP verified successfully' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Something went wrong.' });
-  }
+    console.error('OTP verification error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 };
